@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CROPS, COUNTIES, SOIL_TYPES, calculateFarmAnalysis,
   type FarmInput, type FarmAnalysis, type CropType, type County, type SoilType,
 } from '@/lib/farmData';
+import { fetchWeatherData, getWeatherEmoji, getWeatherDescription, type WeatherData } from '@/lib/weatherApi';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import {
-  TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Leaf,
+  TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Leaf, CloudRain, Loader2,
 } from 'lucide-react';
 
 export default function FinancialPlanner() {
@@ -19,14 +20,36 @@ export default function FinancialPlanner() {
     expectedRainfall: undefined,
   });
   const [result, setResult] = useState<FarmAnalysis | null>(null);
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [loadingWeather, setLoadingWeather] = useState(false);
+
+  // Fetch weather when county changes
+  useEffect(() => {
+    let cancelled = false;
+    setLoadingWeather(true);
+    fetchWeatherData(input.county)
+      .then((data) => {
+        if (cancelled) return;
+        setWeather(data);
+        // Auto-fill rainfall estimate (annualized from 30-day data)
+        const annualizedRainfall = Math.round(data.rainfall30d * 12);
+        setInput((prev) => ({ ...prev, expectedRainfall: annualizedRainfall }));
+      })
+      .catch(() => {
+        if (!cancelled) setWeather(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingWeather(false);
+      });
+    return () => { cancelled = true; };
+  }, [input.county]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setResult(calculateFarmAnalysis(input));
   };
 
-  const formatKES = (n: number) =>
-    `KES ${n.toLocaleString()}`;
+  const formatKES = (n: number) => `KES ${n.toLocaleString()}`;
 
   const chartData = result
     ? [
@@ -51,13 +74,34 @@ export default function FinancialPlanner() {
               onChange={(v) => setInput({ ...input, crop: v as CropType })} />
             <SelectField label="County / Location" value={input.county} options={[...COUNTIES]}
               onChange={(v) => setInput({ ...input, county: v as County })} />
+            
+            {/* Live weather widget */}
+            {loadingWeather ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground p-3 rounded-lg bg-muted/50">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Fetching weather for {input.county}...
+              </div>
+            ) : weather ? (
+              <div className="p-3 rounded-lg bg-muted/50 space-y-1">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <span className="text-lg">{getWeatherEmoji(weather.weatherCode)}</span>
+                  {getWeatherDescription(weather.weatherCode)} — {weather.currentTemp}°C
+                </div>
+                <div className="flex gap-4 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1"><CloudRain className="h-3 w-3" /> 7d: {weather.rainfall7d}mm</span>
+                  <span>30d: {weather.rainfall30d}mm</span>
+                  <span>Humidity: {weather.humidity}%</span>
+                </div>
+              </div>
+            ) : null}
+
             <NumberField label="Farm Size (acres)" value={input.farmSize}
               onChange={(v) => setInput({ ...input, farmSize: v })} min={0.5} step={0.5} />
             <SelectField label="Soil Type" value={input.soilType} options={[...SOIL_TYPES]}
               onChange={(v) => setInput({ ...input, soilType: v as SoilType })} />
             <NumberField label="Fertilizer Budget (KES)" value={input.fertilizerBudget}
               onChange={(v) => setInput({ ...input, fertilizerBudget: v })} min={0} step={1000} />
-            <NumberField label="Expected Rainfall (mm, optional)" value={input.expectedRainfall ?? 0}
+            <NumberField label="Expected Annual Rainfall (mm)" value={input.expectedRainfall ?? 0}
               onChange={(v) => setInput({ ...input, expectedRainfall: v || undefined })} min={0} step={50} />
 
             <button
