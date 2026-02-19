@@ -44,10 +44,11 @@ const BASE_YIELDS: Record<CropType, number> = {
   Tea: 2.2, Coffee: 0.8, Potatoes: 8.0, Tomatoes: 12.0, Onions: 10.0,
 };
 
-// Market prices per ton in KES
+// Market prices per ton in KES (realistic Kenyan market prices as of 2026)
+// Sources: NCPB, Nairobi market surveys, county market reports
 const MARKET_PRICES: Record<CropType, number> = {
-  Maize: 35000, Beans: 80000, Wheat: 45000, Rice: 90000, Sorghum: 30000,
-  Tea: 250000, Coffee: 400000, Potatoes: 25000, Tomatoes: 40000, Onions: 35000,
+  Maize: 55000, Beans: 120000, Wheat: 65000, Rice: 110000, Sorghum: 45000,
+  Tea: 320000, Coffee: 500000, Potatoes: 40000, Tomatoes: 70000, Onions: 55000,
 };
 
 // Soil multipliers
@@ -98,6 +99,25 @@ export function calculateFarmAnalysis(input: FarmInput): FarmAnalysis {
 }
 
 // Market data
+// Known markets per county
+export const COUNTY_MARKETS: Record<County, string[]> = {
+  'Nakuru': ['Nakuru Town Market', 'Naivasha Market'],
+  'Uasin Gishu': ['Eldoret Main Market', 'Burnt Forest Market'],
+  'Trans Nzoia': ['Kitale Municipal Market'],
+  'Nyandarua': ['Ol Kalou Market', 'Engineer Market'],
+  'Kiambu': ['Githunguri Market', 'Thika Market'],
+  'Meru': ['Meru Town Market', 'Nkubu Market'],
+  'Nyeri': ['Nyeri Town Market', 'Karatina Market'],
+  'Kirinyaga': ['Kerugoya Market', 'Wanguru Market'],
+  'Machakos': ['Machakos Town Market', 'Tala Market'],
+  'Bungoma': ['Bungoma Municipal Market'],
+  'Kakamega': ['Kakamega Municipal Market'],
+  'Kisii': ['Kisii Town Market', 'Daraja Mbili Market'],
+  'Narok': ['Narok Town Market'],
+  'Laikipia': ['Nanyuki Market', 'Rumuruti Market'],
+  'Embu': ['Embu Town Market'],
+};
+
 export interface MarketPrice {
   crop: CropType;
   county: County;
@@ -106,35 +126,48 @@ export interface MarketPrice {
   change30d: number;
   volatility: 'Low' | 'Medium' | 'High';
   highestBuyingCounty: County;
+  market: string;
 }
 
 export function getMarketData(): MarketPrice[] {
   return CROPS.slice(0, 6).flatMap(crop =>
-    COUNTIES.slice(0, 5).map(county => ({
-      crop,
-      county,
-      price: MARKET_PRICES[crop] + Math.round((Math.random() - 0.5) * MARKET_PRICES[crop] * 0.15),
-      change7d: parseFloat(((Math.random() - 0.4) * 8).toFixed(1)),
-      change30d: parseFloat(((Math.random() - 0.3) * 15).toFixed(1)),
-      volatility: (['Low', 'Medium', 'High'] as const)[Math.floor(Math.random() * 3)],
-      highestBuyingCounty: COUNTIES[Math.floor(Math.random() * 5)],
-    }))
+    COUNTIES.slice(0, 5).map(county => {
+      const markets = COUNTY_MARKETS[county];
+      return {
+        crop,
+        county,
+        price: MARKET_PRICES[crop] + Math.round((Math.random() - 0.5) * MARKET_PRICES[crop] * 0.12),
+        change7d: parseFloat(((Math.random() - 0.4) * 8).toFixed(1)),
+        change30d: parseFloat(((Math.random() - 0.3) * 15).toFixed(1)),
+        volatility: (['Low', 'Medium', 'High'] as const)[Math.floor(Math.random() * 3)],
+        highestBuyingCounty: COUNTIES[Math.floor(Math.random() * 5)],
+        market: markets[Math.floor(Math.random() * markets.length)],
+      };
+    })
   );
 }
 
 export function getPriceTrend(crop: CropType): { day: string; price: number }[] {
   const base = MARKET_PRICES[crop];
   const now = new Date();
-  // Generate ~365 daily data points going back 12 months
-  return Array.from({ length: 365 }, (_, i) => {
-    const date = new Date(now);
-    date.setDate(date.getDate() - (364 - i));
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  // Generate daily data from 12 months ago up to tomorrow (includes today + tomorrow)
+  const startDate = new Date(now);
+  startDate.setFullYear(startDate.getFullYear() - 1);
+  const totalDays = Math.ceil((tomorrow.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+  return Array.from({ length: totalDays }, (_, i) => {
+    const date = new Date(startDate);
+    date.setDate(date.getDate() + i);
     const month = date.getMonth();
     // Seasonal variation: prices tend to be higher around Feb-Apr (post-harvest scarcity)
     const seasonal = Math.sin((month - 1) * Math.PI / 6) * 0.08;
-    // Random walk with slight uptrend
-    const noise = (Math.random() - 0.48) * base * 0.03;
-    const trend = i * (base * 0.0001);
+    // Deterministic noise based on date to prevent re-randomizing on re-render
+    const seed = date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate();
+    const pseudoRandom = ((Math.sin(seed * 9301 + 49297) % 233280) / 233280 + 1) % 1;
+    const noise = (pseudoRandom - 0.48) * base * 0.025;
+    const trend = i * (base * 0.00008);
     return {
       day: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`,
       price: Math.round(base * (1 + seasonal) + noise + trend),

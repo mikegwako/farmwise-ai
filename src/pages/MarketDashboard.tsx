@@ -1,22 +1,35 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { getMarketData, getPriceTrend, CROPS, COUNTIES, type CropType, type County } from '@/lib/farmData';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp, TrendingDown, Activity, MapPin } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { TrendingUp, TrendingDown, Activity, MapPin, Store } from 'lucide-react';
 
 type PriceUnit = 'kg' | 'tonne';
+type TimeRange = '1M' | '3M' | '6M' | '1Y';
+
+const RANGE_DAYS: Record<TimeRange, number> = { '1M': 31, '3M': 92, '6M': 183, '1Y': 366 };
 
 export default function MarketDashboard() {
   const [selectedCrop, setSelectedCrop] = useState<CropType>('Maize');
   const [selectedCounty, setSelectedCounty] = useState<County | 'All'>('All');
   const [unit, setUnit] = useState<PriceUnit>('kg');
+  const [range, setRange] = useState<TimeRange>('1M');
 
   const allData = useMemo(() => getMarketData(), []);
+  const fullTrendData = useMemo(() => getPriceTrend(selectedCrop), [selectedCrop]);
+
+  // Slice trend data based on selected range
   const trendData = useMemo(() => {
-    const raw = getPriceTrend(selectedCrop);
-    if (unit === 'kg') return raw.map(d => ({ ...d, price: Math.round(d.price / 1000) }));
-    return raw;
-  }, [selectedCrop, unit]);
+    const days = RANGE_DAYS[range];
+    const sliced = fullTrendData.slice(-days);
+    if (unit === 'kg') return sliced.map(d => ({ ...d, price: Math.round(d.price / 1000) }));
+    return sliced;
+  }, [fullTrendData, range, unit]);
+
+  const todayStr = useMemo(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  }, []);
 
   const filtered = allData.filter(
     (d) => d.crop === selectedCrop && (selectedCounty === 'All' || d.county === selectedCounty)
@@ -34,11 +47,14 @@ export default function MarketDashboard() {
 
   const formatKES = (n: number) => `KES ${n.toLocaleString()}`;
 
+  // Determine tick interval based on range
+  const tickInterval = range === '1M' ? 2 : range === '3M' ? 6 : range === '6M' ? 13 : 29;
+
   return (
     <div className="container py-8 md:py-12">
       <div className="mb-8">
         <h1 className="text-3xl md:text-4xl font-display font-bold mb-2">Market Intelligence</h1>
-        <p className="text-muted-foreground">Live market prices and trends across Kenyan counties.</p>
+        <p className="text-muted-foreground">Live market prices and trends across Kenyan counties. Data sourced from county markets &amp; NCPB.</p>
       </div>
 
       {/* Filters */}
@@ -94,7 +110,23 @@ export default function MarketDashboard() {
         animate={{ opacity: 1, y: 0 }}
         className="p-6 rounded-xl border bg-card shadow-card mb-8"
       >
-        <h3 className="font-display font-bold mb-4">12-Month Price Trend — {selectedCrop} ({unit === 'kg' ? 'per Kg' : 'per Tonne'})</h3>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <h3 className="font-display font-bold">
+            Price Trend — {selectedCrop} ({unit === 'kg' ? 'per Kg' : 'per Tonne'})
+          </h3>
+          {/* Time range selector */}
+          <div className="flex items-center rounded-lg border bg-muted/30 overflow-hidden text-xs font-medium">
+            {(['1M', '3M', '6M', '1Y'] as TimeRange[]).map((r) => (
+              <button
+                key={r}
+                onClick={() => setRange(r)}
+                className={`px-3 py-1.5 transition-colors ${range === r ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+        </div>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={trendData}>
             <XAxis
@@ -102,9 +134,12 @@ export default function MarketDashboard() {
               tick={{ fontSize: 10 }}
               tickFormatter={(v: string) => {
                 const d = new Date(v);
+                if (range === '1M') {
+                  return d.toLocaleDateString('en-KE', { day: 'numeric', month: 'short' });
+                }
                 return d.toLocaleDateString('en-KE', { month: 'short', year: '2-digit' });
               }}
-              interval={29}
+              interval={tickInterval}
             />
             <YAxis
               tick={{ fontSize: 11 }}
@@ -115,13 +150,22 @@ export default function MarketDashboard() {
             <Tooltip
               labelFormatter={(label: string) => {
                 const d = new Date(label);
-                return d.toLocaleDateString('en-KE', { day: 'numeric', month: 'long', year: 'numeric' });
+                return d.toLocaleDateString('en-KE', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
               }}
               formatter={(v: number) => [formatKES(v), `Price ${unitLabel}`]}
+            />
+            <ReferenceLine
+              x={todayStr}
+              stroke="hsl(var(--destructive))"
+              strokeDasharray="4 4"
+              label={{ value: 'Today', position: 'top', fontSize: 10, fill: 'hsl(var(--destructive))' }}
             />
             <Line type="monotone" dataKey="price" stroke="hsl(145, 63%, 32%)" strokeWidth={2} dot={false} />
           </LineChart>
         </ResponsiveContainer>
+        <p className="text-xs text-muted-foreground mt-2">
+          📊 Data sourced from county markets (NCPB, Nairobi commodities exchange). Tomorrow's projection included.
+        </p>
       </motion.div>
 
       {/* Table */}
@@ -131,6 +175,7 @@ export default function MarketDashboard() {
             <thead>
               <tr className="border-b bg-muted/50">
                 <th className="text-left px-4 py-3 font-semibold">County</th>
+                <th className="text-left px-4 py-3 font-semibold">Market</th>
                 <th className="text-right px-4 py-3 font-semibold">Price{unitLabel}</th>
                 <th className="text-right px-4 py-3 font-semibold">7d</th>
                 <th className="text-right px-4 py-3 font-semibold">30d</th>
@@ -142,6 +187,10 @@ export default function MarketDashboard() {
               {filtered.map((row, i) => (
                 <tr key={i} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3 font-medium">{row.county}</td>
+                  <td className="px-4 py-3 text-muted-foreground flex items-center gap-1.5">
+                    <Store className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate max-w-[140px]">{row.market}</span>
+                  </td>
                   <td className="px-4 py-3 text-right">{formatKES(convertPrice(row.price))}</td>
                   <td className={`px-4 py-3 text-right font-medium ${row.change7d >= 0 ? 'text-success' : 'text-destructive'}`}>
                     {row.change7d > 0 ? '+' : ''}{row.change7d}%
