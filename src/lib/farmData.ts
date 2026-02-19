@@ -124,10 +124,22 @@ export function getMarketData(): MarketPrice[] {
 
 export function getPriceTrend(crop: CropType): { day: string; price: number }[] {
   const base = MARKET_PRICES[crop];
-  return Array.from({ length: 30 }, (_, i) => ({
-    day: `Day ${i + 1}`,
-    price: base + Math.round((Math.random() - 0.5) * base * 0.1),
-  }));
+  const now = new Date();
+  // Generate ~365 daily data points going back 12 months
+  return Array.from({ length: 365 }, (_, i) => {
+    const date = new Date(now);
+    date.setDate(date.getDate() - (364 - i));
+    const month = date.getMonth();
+    // Seasonal variation: prices tend to be higher around Feb-Apr (post-harvest scarcity)
+    const seasonal = Math.sin((month - 1) * Math.PI / 6) * 0.08;
+    // Random walk with slight uptrend
+    const noise = (Math.random() - 0.48) * base * 0.03;
+    const trend = i * (base * 0.0001);
+    return {
+      day: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`,
+      price: Math.round(base * (1 + seasonal) + noise + trend),
+    };
+  });
 }
 
 // Marketplace
