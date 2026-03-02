@@ -1,14 +1,16 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Sprout, BarChart3, Store, Calculator, Menu, X, LogIn, LogOut, User } from 'lucide-react';
+import { Sprout, BarChart3, Store, Calculator, Menu, X, LogIn, LogOut, User, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/lib/authStore';
+import ThemeToggle from './ThemeToggle';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Home', icon: Sprout },
   { to: '/planner', label: 'Financial Planner', icon: Calculator },
   { to: '/market', label: 'Market Intel', icon: BarChart3 },
   { to: '/marketplace', label: 'Marketplace', icon: Store },
+  { to: '/about', label: 'About', icon: Info },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -32,7 +34,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Link
                 key={to}
                 to={to}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   location.pathname === to
                     ? 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted'
@@ -44,16 +46,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             ))}
           </nav>
 
-          {/* Auth + Mobile toggle */}
+          {/* Auth + Theme + Mobile toggle */}
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             {user ? (
               <div className="hidden md:flex items-center gap-2">
                 <span className="text-sm text-muted-foreground flex items-center gap-1">
                   <User className="h-4 w-4" />
                   {user.name}
+                  {user.role === 'admin' && (
+                    <span className="text-[10px] font-bold bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded-full ml-1">ADMIN</span>
+                  )}
                 </span>
                 <button
-                  onClick={() => { logout(); navigate('/'); }}
+                  onClick={() => { logout(); navigate('/login'); }}
                   className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 >
                   <LogOut className="h-4 w-4" />
@@ -106,7 +112,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 ))}
                 {user ? (
                   <button
-                    onClick={() => { logout(); navigate('/'); setMobileOpen(false); }}
+                    onClick={() => { logout(); navigate('/login'); setMobileOpen(false); }}
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
                   >
                     <LogOut className="h-4 w-4" />

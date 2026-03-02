@@ -36,7 +36,7 @@ export default function Signup() {
         className="w-full max-w-md"
       >
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 text-primary font-display text-2xl font-bold">
+          <Link to="/about" className="inline-flex items-center gap-2 text-primary font-display text-2xl font-bold">
             <Sprout className="h-8 w-8" />
             FarmWise AI
           </Link>

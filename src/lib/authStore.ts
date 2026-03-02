@@ -6,7 +6,7 @@ export interface User {
   name: string;
   email: string;
   phone: string;
-  role: 'farmer' | 'buyer';
+  role: 'farmer' | 'buyer' | 'admin';
   county: string;
   createdAt: string;
 }
@@ -26,6 +26,29 @@ function saveUsers(users: User[]) {
   localStorage.setItem(USERS_KEY, JSON.stringify(users));
 }
 
+// Seed a default admin account on first load
+function ensureAdminSeeded() {
+  const users = getUsers();
+  if (users.some(u => u.role === 'admin')) return;
+  const admin: User = {
+    id: 'admin-001',
+    name: 'Admin',
+    email: 'admin@farmwise.co.ke',
+    phone: '0700000000',
+    role: 'admin',
+    county: 'Nakuru',
+    createdAt: new Date().toISOString(),
+  };
+  users.push(admin);
+  saveUsers(users);
+  const allData = JSON.parse(localStorage.getItem(USERS_KEY + '_auth') || '{}');
+  allData['admin@farmwise.co.ke'] = btoa('admin123');
+  localStorage.setItem(USERS_KEY + '_auth', JSON.stringify(allData));
+}
+
+// Run seed on module load
+ensureAdminSeeded();
+
 export function signup(data: { name: string; email: string; phone: string; password: string; role: 'farmer' | 'buyer'; county: string }): { success: boolean; error?: string; user?: User } {
   const users = getUsers();
   if (users.find(u => u.email === data.email)) {
@@ -40,7 +63,6 @@ export function signup(data: { name: string; email: string; phone: string; passw
     county: data.county,
     createdAt: new Date().toISOString(),
   };
-  // Store password hash (simple base64 for demo — NOT production-safe)
   const allData = JSON.parse(localStorage.getItem(USERS_KEY + '_auth') || '{}');
   allData[data.email] = btoa(data.password);
   localStorage.setItem(USERS_KEY + '_auth', JSON.stringify(allData));
@@ -75,6 +97,10 @@ export function getCurrentUser(): User | null {
   } catch {
     return null;
   }
+}
+
+export function isAdmin(user: User | null): boolean {
+  return user?.role === 'admin';
 }
 
 export interface AuthContextType {
