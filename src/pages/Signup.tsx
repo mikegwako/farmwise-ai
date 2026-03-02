@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sprout, UserPlus } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
+import farmwiseLogo from '@/assets/farmwise-logo.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/authStore';
@@ -36,9 +37,8 @@ export default function Signup() {
         className="w-full max-w-md"
       >
         <div className="text-center mb-8">
-          <Link to="/about" className="inline-flex items-center gap-2 text-primary font-display text-2xl font-bold">
-            <Sprout className="h-8 w-8" />
-            FarmWise AI
+          <Link to="/about" className="inline-flex items-center gap-2">
+            <img src={farmwiseLogo} alt="FarmWiser AI" className="h-16 w-auto" />
           </Link>
           <p className="text-muted-foreground mt-2">Create your account to get started.</p>
         </div>
