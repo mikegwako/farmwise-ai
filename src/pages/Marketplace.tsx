@@ -2,9 +2,12 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getAllListings, addListing, deleteListing, computeMatchScore, type MarketListing } from '@/lib/marketplaceStore';
 import { CROPS, COUNTIES, type CropType, type County } from '@/lib/farmData';
-import { User, Building2, MapPin, Calendar, MessageCircle, Star, Plus, X, Trash2, Phone } from 'lucide-react';
+import { useAuth, isAdmin } from '@/lib/authStore';
+import { User, Building2, MapPin, Calendar, MessageCircle, Star, Plus, X, Trash2, Phone, ShieldCheck } from 'lucide-react';
 
 export default function Marketplace() {
+  const { user } = useAuth();
+  const userIsAdmin = isAdmin(user);
   const [filter, setFilter] = useState<'all' | 'farmer' | 'buyer'>('all');
   const [showForm, setShowForm] = useState(false);
   const [refresh, setRefresh] = useState(0);
@@ -12,7 +15,6 @@ export default function Marketplace() {
   const listings = useMemo(() => getAllListings(), [refresh]);
   const filtered = filter === 'all' ? listings : listings.filter((l) => l.type === filter);
 
-  // Enrich with match scores
   const enriched = filtered.map((l) => ({
     ...l,
     matchScore: computeMatchScore(l, listings),
@@ -25,6 +27,7 @@ export default function Marketplace() {
   };
 
   const handleDelete = (id: string) => {
+    if (!userIsAdmin) return;
     deleteListing(id);
     setRefresh((r) => r + 1);
   };
@@ -35,6 +38,12 @@ export default function Marketplace() {
         <div>
           <h1 className="text-3xl md:text-4xl font-display font-bold mb-2">Marketplace</h1>
           <p className="text-muted-foreground">Connect farmers with buyers. Smart matching by location and price.</p>
+          {userIsAdmin && (
+            <div className="flex items-center gap-1.5 mt-2 text-xs text-secondary font-medium">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Admin mode — you can delete any listing
+            </div>
+          )}
         </div>
         <button
           onClick={() => setShowForm(true)}
@@ -97,7 +106,7 @@ export default function Marketplace() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
           >
-            <ListingCard listing={listing} onDelete={handleDelete} />
+            <ListingCard listing={listing} onDelete={userIsAdmin ? handleDelete : undefined} />
           </motion.div>
         ))}
       </div>
@@ -186,7 +195,7 @@ function NewListingForm({ onSubmit, onCancel }: {
   );
 }
 
-function ListingCard({ listing, onDelete }: { listing: MarketListing & { matchScore: number }; onDelete: (id: string) => void }) {
+function ListingCard({ listing, onDelete }: { listing: MarketListing & { matchScore: number }; onDelete?: (id: string) => void }) {
   const isFarmer = listing.type === 'farmer';
   const [showContact, setShowContact] = useState(false);
   const formatKES = (n: number) => `KES ${n.toLocaleString()}`;
@@ -212,9 +221,11 @@ function ListingCard({ listing, onDelete }: { listing: MarketListing & { matchSc
               {listing.matchScore}%
             </div>
           )}
-          <button onClick={() => onDelete(listing.id)} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+          {onDelete && (
+            <button onClick={() => onDelete(listing.id)} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors" title="Admin: Delete listing">
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </div>
 

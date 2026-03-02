@@ -32,7 +32,7 @@ export default function Login() {
         className="w-full max-w-md"
       >
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 text-primary font-display text-2xl font-bold">
+          <Link to="/about" className="inline-flex items-center gap-2 text-primary font-display text-2xl font-bold">
             <Sprout className="h-8 w-8" />
             FarmWise AI
           </Link>
@@ -57,10 +57,19 @@ export default function Login() {
               Sign In
             </Button>
           </form>
-          <p className="text-center text-sm text-muted-foreground mt-4">
-            Don't have an account?{' '}
-            <Link to="/signup" className="text-primary font-medium hover:underline">Sign Up</Link>
-          </p>
+          <div className="mt-4 space-y-2 text-center text-sm text-muted-foreground">
+            <p>
+              Don't have an account?{' '}
+              <Link to="/signup" className="text-primary font-medium hover:underline">Sign Up</Link>
+            </p>
+            <p>
+              <Link to="/about" className="text-primary/70 hover:underline">Learn more about FarmWise AI →</Link>
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 p-3 rounded-lg bg-muted/50 border text-xs text-muted-foreground text-center">
+          <strong>Admin access:</strong> admin@farmwise.co.ke / admin123
         </div>
       </motion.div>
     </div>

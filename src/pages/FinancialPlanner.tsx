@@ -101,8 +101,18 @@ export default function FinancialPlanner() {
               onChange={(v) => setInput({ ...input, soilType: v as SoilType })} />
             <NumberField label="Fertilizer Budget (KES)" value={input.fertilizerBudget}
               onChange={(v) => setInput({ ...input, fertilizerBudget: v })} min={0} step={1000} />
-            <NumberField label="Expected Annual Rainfall (mm)" value={input.expectedRainfall ?? 0}
-              onChange={(v) => setInput({ ...input, expectedRainfall: v || undefined })} min={0} step={50} />
+            <div>
+              <label className="block text-sm font-medium mb-1.5">Expected Annual Rainfall (mm)</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={input.expectedRainfall ?? 0}
+                  readOnly
+                  className="w-full px-3 py-2.5 rounded-lg border bg-muted/50 text-sm outline-none cursor-default"
+                />
+                <span className="text-xs text-muted-foreground whitespace-nowrap">Auto from weather</span>
+              </div>
+            </div>
 
             <button
               type="submit"
