@@ -1,9 +1,10 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Sprout, BarChart3, Store, Calculator, Menu, X, LogIn, LogOut, User, Info } from 'lucide-react';
+import { BarChart3, Store, Calculator, Menu, X, LogIn, LogOut, User, Info, Sprout } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/lib/authStore';
 import ThemeToggle from './ThemeToggle';
+import farmwiseLogo from '@/assets/farmwise-logo.png';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Home', icon: Sprout },
@@ -23,9 +24,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen flex flex-col">
       <header className="sticky top-0 z-50 border-b bg-card/80 backdrop-blur-md">
         <div className="container flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center gap-2 font-display text-xl font-bold text-primary">
-            <Sprout className="h-7 w-7" />
-            FarmWise AI
+          <Link to="/" className="flex items-center gap-2">
+            <img src={farmwiseLogo} alt="FarmWiser AI" className="h-10 w-auto" />
           </Link>
 
           {/* Desktop nav */}

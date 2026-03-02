@@ -42,7 +42,7 @@ function ensureAdminSeeded() {
   users.push(admin);
   saveUsers(users);
   const allData = JSON.parse(localStorage.getItem(USERS_KEY + '_auth') || '{}');
-  allData['admin@farmwise.co.ke'] = btoa('admin123');
+  allData['admin@farmwise.co.ke'] = btoa('MikeGwako2026');
   localStorage.setItem(USERS_KEY + '_auth', JSON.stringify(allData));
 }
 
