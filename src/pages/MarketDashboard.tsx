@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { getMarketData, getPriceTrend, CROPS, COUNTIES, type CropType, type County } from '@/lib/farmData';
+import { CROP_COUNTIES } from '@/lib/cropData';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { TrendingUp, TrendingDown, Activity, MapPin, Store } from 'lucide-react';
 
@@ -15,10 +16,12 @@ export default function MarketDashboard() {
   const [unit, setUnit] = useState<PriceUnit>('kg');
   const [range, setRange] = useState<TimeRange>('1M');
 
-  const allData = useMemo(() => getMarketData(), []);
+  // Counties available for selected crop
+  const cropCounties = useMemo(() => CROP_COUNTIES[selectedCrop] || [], [selectedCrop]);
+
+  const allData = useMemo(() => getMarketData(CROP_COUNTIES), []);
   const fullTrendData = useMemo(() => getPriceTrend(selectedCrop), [selectedCrop]);
 
-  // Slice trend data based on selected range
   const trendData = useMemo(() => {
     const days = RANGE_DAYS[range];
     const sliced = fullTrendData.slice(-days);
@@ -46,9 +49,16 @@ export default function MarketDashboard() {
     : 0;
 
   const formatKES = (n: number) => `KES ${n.toLocaleString()}`;
-
-  // Determine tick interval based on range
   const tickInterval = range === '1M' ? 2 : range === '3M' ? 6 : range === '6M' ? 13 : 29;
+
+  // Reset county when crop changes and selected county isn't valid
+  const handleCropChange = (crop: CropType) => {
+    setSelectedCrop(crop);
+    const newCounties = CROP_COUNTIES[crop] || [];
+    if (selectedCounty !== 'All' && !newCounties.includes(selectedCounty as County)) {
+      setSelectedCounty('All');
+    }
+  };
 
   return (
     <div className="container py-8 md:py-12">
@@ -61,20 +71,19 @@ export default function MarketDashboard() {
       <div className="flex flex-wrap gap-3 mb-8">
         <select
           value={selectedCrop}
-          onChange={(e) => setSelectedCrop(e.target.value as CropType)}
+          onChange={(e) => handleCropChange(e.target.value as CropType)}
           className="px-3 py-2 rounded-lg border bg-card text-sm font-medium focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
         >
-          {CROPS.slice(0, 6).map((c) => <option key={c}>{c}</option>)}
+          {CROPS.map((c) => <option key={c}>{c}</option>)}
         </select>
         <select
           value={selectedCounty}
           onChange={(e) => setSelectedCounty(e.target.value as County | 'All')}
           className="px-3 py-2 rounded-lg border bg-card text-sm font-medium focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
         >
-          <option value="All">All Counties</option>
-          {COUNTIES.slice(0, 5).map((c) => <option key={c}>{c}</option>)}
+          <option value="All">All Counties ({cropCounties.length})</option>
+          {cropCounties.map((c) => <option key={c}>{c}</option>)}
         </select>
-        {/* Unit toggle */}
         <div className="flex items-center rounded-lg border bg-card overflow-hidden text-sm font-medium">
           <button
             onClick={() => setUnit('kg')}
@@ -114,7 +123,6 @@ export default function MarketDashboard() {
           <h3 className="font-display font-bold">
             Price Trend — {selectedCrop} ({unit === 'kg' ? 'per Kg' : 'per Tonne'})
           </h3>
-          {/* Time range selector */}
           <div className="flex items-center rounded-lg border bg-muted/30 overflow-hidden text-xs font-medium">
             {(['1M', '3M', '6M', '1Y'] as TimeRange[]).map((r) => (
               <button
@@ -134,18 +142,14 @@ export default function MarketDashboard() {
               tick={{ fontSize: 10 }}
               tickFormatter={(v: string) => {
                 const d = new Date(v);
-                if (range === '1M') {
-                  return d.toLocaleDateString('en-KE', { day: 'numeric', month: 'short' });
-                }
+                if (range === '1M') return d.toLocaleDateString('en-KE', { day: 'numeric', month: 'short' });
                 return d.toLocaleDateString('en-KE', { month: 'short', year: '2-digit' });
               }}
               interval={tickInterval}
             />
             <YAxis
               tick={{ fontSize: 11 }}
-              tickFormatter={(v: number) =>
-                unit === 'kg' ? `${v}` : `${(v / 1000).toFixed(0)}K`
-              }
+              tickFormatter={(v: number) => unit === 'kg' ? `${v}` : `${(v / 1000).toFixed(0)}K`}
             />
             <Tooltip
               labelFormatter={(label: string) => {
@@ -210,6 +214,9 @@ export default function MarketDashboard() {
                   <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{row.highestBuyingCounty}</td>
                 </tr>
               ))}
+              {filtered.length === 0 && (
+                <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">No market data available for this selection</td></tr>
+              )}
             </tbody>
           </table>
         </div>
