@@ -1,5 +1,4 @@
 // Mock data and calculation engine for FarmWise AI
-// Structured for future API integration
 
 export const CROPS = [
   'Maize', 'Beans', 'Wheat', 'Rice', 'Sorghum', 'Tea', 'Coffee', 'Potatoes', 'Tomatoes', 'Onions'
@@ -8,9 +7,16 @@ export const CROPS = [
 export type CropType = typeof CROPS[number];
 
 export const COUNTIES = [
-  'Nakuru', 'Uasin Gishu', 'Trans Nzoia', 'Nyandarua', 'Kiambu',
-  'Meru', 'Nyeri', 'Kirinyaga', 'Machakos', 'Bungoma',
-  'Kakamega', 'Kisii', 'Narok', 'Laikipia', 'Embu'
+  'Baringo', 'Bomet', 'Bungoma', 'Busia', 'Elgeyo-Marakwet',
+  'Embu', 'Garissa', 'Homa Bay', 'Isiolo', 'Kajiado',
+  'Kakamega', 'Kericho', 'Kiambu', 'Kilifi', 'Kirinyaga',
+  'Kisii', 'Kisumu', 'Kitui', 'Kwale', 'Laikipia',
+  'Lamu', 'Machakos', 'Makueni', 'Mandera', 'Marsabit',
+  'Meru', 'Migori', 'Mombasa', 'Muranga', 'Nairobi',
+  'Nakuru', 'Nandi', 'Narok', 'Nyamira', 'Nyandarua',
+  'Nyeri', 'Samburu', 'Siaya', 'Taita-Taveta', 'Tana River',
+  'Tharaka-Nithi', 'Trans Nzoia', 'Turkana', 'Uasin Gishu',
+  'Vihiga', 'Wajir', 'West Pokot',
 ] as const;
 
 export type County = typeof COUNTIES[number];
@@ -38,25 +44,20 @@ export interface FarmAnalysis {
   profitMargin: number;
 }
 
-// Average yield per acre in tons (mock data)
 const BASE_YIELDS: Record<CropType, number> = {
   Maize: 1.8, Beans: 0.6, Wheat: 1.2, Rice: 2.5, Sorghum: 1.0,
   Tea: 2.2, Coffee: 0.8, Potatoes: 8.0, Tomatoes: 12.0, Onions: 10.0,
 };
 
-// Market prices per ton in KES (realistic Kenyan market prices as of 2026)
-// Sources: NCPB, Nairobi market surveys, county market reports
 const MARKET_PRICES: Record<CropType, number> = {
   Maize: 55000, Beans: 120000, Wheat: 65000, Rice: 110000, Sorghum: 45000,
   Tea: 320000, Coffee: 500000, Potatoes: 40000, Tomatoes: 70000, Onions: 55000,
 };
 
-// Soil multipliers
 const SOIL_MULTIPLIERS: Record<SoilType, number> = {
   Loam: 1.15, Clay: 0.85, Sandy: 0.75, Silt: 1.0, 'Clay Loam': 1.05, 'Sandy Loam': 0.95,
 };
 
-// Cost per acre in KES
 const BASE_COSTS: Record<CropType, number> = {
   Maize: 25000, Beans: 18000, Wheat: 30000, Rice: 45000, Sorghum: 15000,
   Tea: 60000, Coffee: 55000, Potatoes: 40000, Tomatoes: 50000, Onions: 35000,
@@ -98,24 +99,55 @@ export function calculateFarmAnalysis(input: FarmInput): FarmAnalysis {
   };
 }
 
-// Market data
-// Known markets per county
+// County markets for all 47 counties
 export const COUNTY_MARKETS: Record<County, string[]> = {
-  'Nakuru': ['Nakuru Town Market', 'Naivasha Market'],
-  'Uasin Gishu': ['Eldoret Main Market', 'Burnt Forest Market'],
-  'Trans Nzoia': ['Kitale Municipal Market'],
-  'Nyandarua': ['Ol Kalou Market', 'Engineer Market'],
-  'Kiambu': ['Githunguri Market', 'Thika Market'],
-  'Meru': ['Meru Town Market', 'Nkubu Market'],
-  'Nyeri': ['Nyeri Town Market', 'Karatina Market'],
-  'Kirinyaga': ['Kerugoya Market', 'Wanguru Market'],
-  'Machakos': ['Machakos Town Market', 'Tala Market'],
-  'Bungoma': ['Bungoma Municipal Market'],
-  'Kakamega': ['Kakamega Municipal Market'],
+  'Baringo': ['Kabarnet Market', 'Marigat Market'],
+  'Bomet': ['Bomet Town Market', 'Sotik Market'],
+  'Bungoma': ['Bungoma Municipal Market', 'Webuye Market'],
+  'Busia': ['Busia Town Market', 'Malaba Border Market'],
+  'Elgeyo-Marakwet': ['Iten Market', 'Kapsowar Market'],
+  'Embu': ['Embu Town Market', 'Runyenjes Market'],
+  'Garissa': ['Garissa Town Market'],
+  'Homa Bay': ['Homa Bay Town Market', 'Oyugis Market'],
+  'Isiolo': ['Isiolo Town Market'],
+  'Kajiado': ['Kajiado Town Market', 'Ngong Market', 'Kitengela Market'],
+  'Kakamega': ['Kakamega Municipal Market', 'Mumias Market'],
+  'Kericho': ['Kericho Town Market', 'Litein Market'],
+  'Kiambu': ['Githunguri Market', 'Thika Market', 'Limuru Market'],
+  'Kilifi': ['Kilifi Town Market', 'Malindi Market'],
+  'Kirinyaga': ['Kerugoya Market', 'Wanguru Market', 'Kagio Market'],
   'Kisii': ['Kisii Town Market', 'Daraja Mbili Market'],
-  'Narok': ['Narok Town Market'],
+  'Kisumu': ['Kisumu Municipal Market', 'Ahero Market'],
+  'Kitui': ['Kitui Town Market', 'Mwingi Market'],
+  'Kwale': ['Kwale Town Market', 'Ukunda Market'],
   'Laikipia': ['Nanyuki Market', 'Rumuruti Market'],
-  'Embu': ['Embu Town Market'],
+  'Lamu': ['Lamu Town Market'],
+  'Machakos': ['Machakos Town Market', 'Tala Market'],
+  'Makueni': ['Wote Market', 'Emali Market'],
+  'Mandera': ['Mandera Town Market'],
+  'Marsabit': ['Marsabit Town Market'],
+  'Meru': ['Meru Town Market', 'Nkubu Market', 'Maua Market'],
+  'Migori': ['Migori Town Market', 'Rongo Market'],
+  'Mombasa': ['Kongowea Market', 'Marikiti Market'],
+  'Muranga': ['Muranga Town Market', 'Kenol Market'],
+  'Nairobi': ['Wakulima Market', 'Gikomba Market', 'City Park Market'],
+  'Nakuru': ['Nakuru Town Market', 'Naivasha Market', 'NCPB Nakuru'],
+  'Nandi': ['Kapsabet Market', 'Nandi Hills Market'],
+  'Narok': ['Narok Town Market', 'Kilgoris Market'],
+  'Nyamira': ['Nyamira Town Market', 'Keroka Market'],
+  'Nyandarua': ['Ol Kalou Market', 'Engineer Market'],
+  'Nyeri': ['Nyeri Town Market', 'Karatina Market'],
+  'Samburu': ['Maralal Market'],
+  'Siaya': ['Siaya Town Market', 'Bondo Market'],
+  'Taita-Taveta': ['Voi Market', 'Wundanyi Market'],
+  'Tana River': ['Hola Market', 'Garsen Market'],
+  'Tharaka-Nithi': ['Chuka Market', 'Marimanti Market'],
+  'Trans Nzoia': ['Kitale Municipal Market', 'NCPB Kitale'],
+  'Turkana': ['Lodwar Market'],
+  'Uasin Gishu': ['Eldoret Main Market', 'NCPB Eldoret'],
+  'Vihiga': ['Mbale Market', 'Luanda Market'],
+  'Wajir': ['Wajir Town Market'],
+  'West Pokot': ['Kapenguria Market', 'Makutano Market'],
 };
 
 export interface MarketPrice {
@@ -129,9 +161,10 @@ export interface MarketPrice {
   market: string;
 }
 
-export function getMarketData(): MarketPrice[] {
-  return CROPS.slice(0, 6).flatMap(crop =>
-    COUNTIES.slice(0, 5).map(county => {
+export function getMarketData(cropCounties?: Record<CropType, County[]>): MarketPrice[] {
+  return CROPS.flatMap(crop => {
+    const counties: County[] = cropCounties?.[crop] || COUNTIES.slice(0, 10);
+    return counties.map(county => {
       const markets = COUNTY_MARKETS[county];
       return {
         crop,
@@ -140,11 +173,11 @@ export function getMarketData(): MarketPrice[] {
         change7d: parseFloat(((Math.random() - 0.4) * 8).toFixed(1)),
         change30d: parseFloat(((Math.random() - 0.3) * 15).toFixed(1)),
         volatility: (['Low', 'Medium', 'High'] as const)[Math.floor(Math.random() * 3)],
-        highestBuyingCounty: COUNTIES[Math.floor(Math.random() * 5)],
+        highestBuyingCounty: COUNTIES[Math.floor(Math.random() * COUNTIES.length)],
         market: markets[Math.floor(Math.random() * markets.length)],
       };
-    })
-  );
+    });
+  });
 }
 
 export function getPriceTrend(crop: CropType): { day: string; price: number }[] {
@@ -152,7 +185,6 @@ export function getPriceTrend(crop: CropType): { day: string; price: number }[] 
   const now = new Date();
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  // Generate daily data from 12 months ago up to tomorrow (includes today + tomorrow)
   const startDate = new Date(now);
   startDate.setFullYear(startDate.getFullYear() - 1);
   const totalDays = Math.ceil((tomorrow.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
@@ -161,9 +193,7 @@ export function getPriceTrend(crop: CropType): { day: string; price: number }[] 
     const date = new Date(startDate);
     date.setDate(date.getDate() + i);
     const month = date.getMonth();
-    // Seasonal variation: prices tend to be higher around Feb-Apr (post-harvest scarcity)
     const seasonal = Math.sin((month - 1) * Math.PI / 6) * 0.08;
-    // Deterministic noise based on date to prevent re-randomizing on re-render
     const seed = date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate();
     const pseudoRandom = ((Math.sin(seed * 9301 + 49297) % 233280) / 233280 + 1) % 1;
     const noise = (pseudoRandom - 0.48) * base * 0.025;
@@ -175,7 +205,7 @@ export function getPriceTrend(crop: CropType): { day: string; price: number }[] 
   });
 }
 
-// Marketplace
+// Marketplace types (kept here for backward compat)
 export interface Listing {
   id: string;
   type: 'farmer' | 'buyer';
@@ -192,15 +222,11 @@ export interface Listing {
 export function getMarketplaceListings(): Listing[] {
   const farmerNames = ['John Kamau', 'Mary Wanjiku', 'Peter Ochieng', 'Grace Muthoni', 'James Kiprop'];
   const buyerNames = ['KenGrain Ltd', 'FreshMart Kenya', 'Nairobi Foods Co', 'AgriTrade East', 'Harvest Direct'];
-
   const listings: Listing[] = [];
   farmerNames.forEach((name, i) => {
     const crop = CROPS[i % CROPS.length];
     listings.push({
-      id: `f-${i}`,
-      type: 'farmer',
-      name,
-      crop,
+      id: `f-${i}`, type: 'farmer', name, crop,
       county: COUNTIES[i % COUNTIES.length],
       quantity: Math.round(2 + Math.random() * 18),
       price: MARKET_PRICES[crop] - Math.round(Math.random() * 5000),
@@ -211,10 +237,7 @@ export function getMarketplaceListings(): Listing[] {
   buyerNames.forEach((name, i) => {
     const crop = CROPS[(i + 2) % CROPS.length];
     listings.push({
-      id: `b-${i}`,
-      type: 'buyer',
-      name,
-      crop,
+      id: `b-${i}`, type: 'buyer', name, crop,
       county: COUNTIES[(i + 1) % COUNTIES.length],
       quantity: Math.round(5 + Math.random() * 45),
       price: MARKET_PRICES[crop] + Math.round(Math.random() * 8000),

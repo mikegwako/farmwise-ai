@@ -13,6 +13,8 @@ export interface User {
 
 const USERS_KEY = 'farmwise_users';
 const SESSION_KEY = 'farmwise_session';
+const ADMIN_VERSION_KEY = 'farmwise_admin_v';
+const CURRENT_ADMIN_VERSION = 3;
 
 function getUsers(): User[] {
   try {
@@ -26,10 +28,13 @@ function saveUsers(users: User[]) {
   localStorage.setItem(USERS_KEY, JSON.stringify(users));
 }
 
-// Seed a default admin account on first load
+// Seed/update admin account with version tracking
 function ensureAdminSeeded() {
-  const users = getUsers();
-  if (users.some(u => u.role === 'admin')) return;
+  const storedVersion = parseInt(localStorage.getItem(ADMIN_VERSION_KEY) || '0', 10);
+  if (storedVersion >= CURRENT_ADMIN_VERSION) return;
+
+  // Remove old admin entry if exists
+  const users = getUsers().filter(u => u.email !== 'admin@farmwise.co.ke');
   const admin: User = {
     id: 'admin-001',
     name: 'Admin',
@@ -41,9 +46,11 @@ function ensureAdminSeeded() {
   };
   users.push(admin);
   saveUsers(users);
+
   const allData = JSON.parse(localStorage.getItem(USERS_KEY + '_auth') || '{}');
   allData['admin@farmwise.co.ke'] = btoa('MikeGwako2026');
   localStorage.setItem(USERS_KEY + '_auth', JSON.stringify(allData));
+  localStorage.setItem(ADMIN_VERSION_KEY, String(CURRENT_ADMIN_VERSION));
 }
 
 // Run seed on module load
