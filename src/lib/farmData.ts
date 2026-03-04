@@ -49,9 +49,11 @@ const BASE_YIELDS: Record<CropType, number> = {
   Tea: 2.2, Coffee: 0.8, Potatoes: 8.0, Tomatoes: 12.0, Onions: 10.0,
 };
 
+// Farmgate prices in KES per tonne (raw produce, farm-to-factory/market)
+// Tea = green leaf ~25 KES/kg; Coffee = cherry ~60 KES/kg
 const MARKET_PRICES: Record<CropType, number> = {
-  Maize: 55000, Beans: 120000, Wheat: 65000, Rice: 110000, Sorghum: 45000,
-  Tea: 320000, Coffee: 500000, Potatoes: 40000, Tomatoes: 70000, Onions: 55000,
+  Maize: 50000, Beans: 100000, Wheat: 55000, Rice: 90000, Sorghum: 40000,
+  Tea: 25000, Coffee: 60000, Potatoes: 35000, Tomatoes: 60000, Onions: 50000,
 };
 
 const SOIL_MULTIPLIERS: Record<SoilType, number> = {
@@ -60,7 +62,7 @@ const SOIL_MULTIPLIERS: Record<SoilType, number> = {
 
 const BASE_COSTS: Record<CropType, number> = {
   Maize: 25000, Beans: 18000, Wheat: 30000, Rice: 45000, Sorghum: 15000,
-  Tea: 60000, Coffee: 55000, Potatoes: 40000, Tomatoes: 50000, Onions: 35000,
+  Tea: 35000, Coffee: 40000, Potatoes: 40000, Tomatoes: 50000, Onions: 35000,
 };
 
 export function calculateFarmAnalysis(input: FarmInput): FarmAnalysis {
