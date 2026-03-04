@@ -13,6 +13,7 @@ export interface MarketListing {
   date: string;
   description: string;
   createdAt: string;
+  ownerEmail?: string; // tracks who created the listing
 }
 
 const STORAGE_KEY = 'farmwise_marketplace';
@@ -63,6 +64,11 @@ export function addListing(listing: Omit<MarketListing, 'id' | 'createdAt'>): Ma
 
 export function deleteListing(id: string) {
   const all = getStored().filter((l) => l.id !== id);
+  save(all);
+}
+
+export function updateListing(id: string, updates: Partial<Omit<MarketListing, 'id' | 'createdAt' | 'ownerEmail'>>) {
+  const all = getStored().map((l) => l.id === id ? { ...l, ...updates } : l);
   save(all);
 }
 

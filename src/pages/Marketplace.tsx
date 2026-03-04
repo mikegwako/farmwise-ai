@@ -1,15 +1,16 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getAllListings, addListing, deleteListing, computeMatchScore, type MarketListing } from '@/lib/marketplaceStore';
+import { getAllListings, addListing, deleteListing, updateListing, computeMatchScore, type MarketListing } from '@/lib/marketplaceStore';
 import { CROPS, COUNTIES, type CropType, type County } from '@/lib/farmData';
 import { useAuth, isAdmin } from '@/lib/authStore';
-import { User, Building2, MapPin, Calendar, MessageCircle, Star, Plus, X, Trash2, Phone, ShieldCheck } from 'lucide-react';
+import { User, Building2, MapPin, Calendar, MessageCircle, Star, Plus, X, Trash2, Phone, ShieldCheck, Pencil } from 'lucide-react';
 
 export default function Marketplace() {
   const { user } = useAuth();
   const userIsAdmin = isAdmin(user);
   const [filter, setFilter] = useState<'all' | 'farmer' | 'buyer'>('all');
   const [showForm, setShowForm] = useState(false);
+  const [editingListing, setEditingListing] = useState<MarketListing | null>(null);
   const [refresh, setRefresh] = useState(0);
 
   const listings = useMemo(() => getAllListings(), [refresh]);
@@ -21,15 +22,26 @@ export default function Marketplace() {
   }));
 
   const handleAdd = (listing: Omit<MarketListing, 'id' | 'createdAt'>) => {
-    addListing(listing);
+    addListing({ ...listing, ownerEmail: user?.email });
     setRefresh((r) => r + 1);
     setShowForm(false);
+  };
+
+  const handleUpdate = (listing: Omit<MarketListing, 'id' | 'createdAt'>) => {
+    if (!editingListing) return;
+    updateListing(editingListing.id, listing);
+    setRefresh((r) => r + 1);
+    setEditingListing(null);
   };
 
   const handleDelete = (id: string) => {
     if (!userIsAdmin) return;
     deleteListing(id);
     setRefresh((r) => r + 1);
+  };
+
+  const canEdit = (listing: MarketListing) => {
+    return user && listing.ownerEmail === user.email;
   };
 
   return (
@@ -54,15 +66,15 @@ export default function Marketplace() {
         </button>
       </div>
 
-      {/* New Listing Form Modal */}
+      {/* New/Edit Listing Form Modal */}
       <AnimatePresence>
-        {showForm && (
+        {(showForm || editingListing) && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-            onClick={(e) => e.target === e.currentTarget && setShowForm(false)}
+            onClick={(e) => e.target === e.currentTarget && (setShowForm(false), setEditingListing(null))}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
@@ -71,10 +83,14 @@ export default function Marketplace() {
               className="w-full max-w-md bg-card rounded-xl border shadow-elevated p-6 max-h-[90vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-display font-bold text-lg">Create Listing</h2>
-                <button onClick={() => setShowForm(false)} className="p-1 rounded hover:bg-muted"><X className="h-5 w-5" /></button>
+                <h2 className="font-display font-bold text-lg">{editingListing ? 'Edit Listing' : 'Create Listing'}</h2>
+                <button onClick={() => (setShowForm(false), setEditingListing(null))} className="p-1 rounded hover:bg-muted"><X className="h-5 w-5" /></button>
               </div>
-              <NewListingForm onSubmit={handleAdd} onCancel={() => setShowForm(false)} />
+              <NewListingForm
+                onSubmit={editingListing ? handleUpdate : handleAdd}
+                onCancel={() => (setShowForm(false), setEditingListing(null))}
+                initialData={editingListing || undefined}
+              />
             </motion.div>
           </motion.div>
         )}
@@ -106,7 +122,11 @@ export default function Marketplace() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
           >
-            <ListingCard listing={listing} onDelete={userIsAdmin ? handleDelete : undefined} />
+            <ListingCard
+              listing={listing}
+              onDelete={userIsAdmin ? handleDelete : undefined}
+              onEdit={canEdit(listing) ? () => setEditingListing(listing) : undefined}
+            />
           </motion.div>
         ))}
       </div>
@@ -121,20 +141,21 @@ export default function Marketplace() {
   );
 }
 
-function NewListingForm({ onSubmit, onCancel }: {
+function NewListingForm({ onSubmit, onCancel, initialData }: {
   onSubmit: (l: Omit<MarketListing, 'id' | 'createdAt'>) => void;
   onCancel: () => void;
+  initialData?: Partial<MarketListing>;
 }) {
   const [form, setForm] = useState({
-    type: 'farmer' as 'farmer' | 'buyer',
-    name: '',
-    phone: '',
-    crop: 'Maize' as CropType,
-    county: 'Nakuru' as County,
-    quantity: 10,
-    price: 35000,
-    date: '2026-03-15',
-    description: '',
+    type: (initialData?.type || 'farmer') as 'farmer' | 'buyer',
+    name: initialData?.name || '',
+    phone: initialData?.phone || '',
+    crop: (initialData?.crop || 'Maize') as CropType,
+    county: (initialData?.county || 'Nakuru') as County,
+    quantity: initialData?.quantity || 10,
+    price: initialData?.price || 35000,
+    date: initialData?.date || '2026-03-15',
+    description: initialData?.description || '',
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -189,13 +210,15 @@ function NewListingForm({ onSubmit, onCancel }: {
         className="w-full px-3 py-2.5 rounded-lg border bg-background text-sm outline-none focus:ring-2 focus:ring-primary/30 resize-none" />
       <div className="flex gap-2 pt-2">
         <button type="button" onClick={onCancel} className="flex-1 py-2.5 rounded-lg bg-muted text-muted-foreground text-sm font-medium">Cancel</button>
-        <button type="submit" className="flex-1 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium">Create Listing</button>
+        <button type="submit" className="flex-1 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium">
+          {initialData ? 'Save Changes' : 'Create Listing'}
+        </button>
       </div>
     </form>
   );
 }
 
-function ListingCard({ listing, onDelete }: { listing: MarketListing & { matchScore: number }; onDelete?: (id: string) => void }) {
+function ListingCard({ listing, onDelete, onEdit }: { listing: MarketListing & { matchScore: number }; onDelete?: (id: string) => void; onEdit?: () => void }) {
   const isFarmer = listing.type === 'farmer';
   const [showContact, setShowContact] = useState(false);
   const formatKES = (n: number) => `KES ${n.toLocaleString()}`;
@@ -220,6 +243,11 @@ function ListingCard({ listing, onDelete }: { listing: MarketListing & { matchSc
               <Star className="h-3 w-3 text-secondary" />
               {listing.matchScore}%
             </div>
+          )}
+          {onEdit && (
+            <button onClick={onEdit} className="p-1 rounded hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors" title="Edit your listing">
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
           )}
           {onDelete && (
             <button onClick={() => onDelete(listing.id)} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors" title="Admin: Delete listing">
